@@ -385,6 +385,13 @@ class WorkspaceSearch {
     core_.utils.dom.addClass(searchContent, 'blockly-ws-search-content');
     searchContainer.appendChild(searchContent);
 
+    // Add searchType wrapper and DropDown.
+    const searchTypeWrapper = document.createElement('div');
+    Blockly.utils.dom.addClass(searchTypeWrapper, 'blockly-ws-search-select');
+    const searchTypeDropDown = this.createDropDown_(['keyword', 'block', 'component']);
+    this.addEvent_(searchTypeDropDown, 'change', this, (e) => this.searchChange_(e));
+    searchTypeWrapper.appendChild(searchTypeDropDown);
+
     const inputWrapper = document.createElement('div');
     core_.utils.dom.addClass(inputWrapper, 'blockly-ws-search-input');
     this.inputElement_ = this.createTextInput_();
@@ -396,6 +403,23 @@ class WorkspaceSearch {
       this.searchAndHighlight(this.searchText_, this.preserveSelected);
       this.inputElement_.select();
     });
+  
+    // Add blockType wrapper and DropDown.
+    const blockTypeWrapper = document.createElement('div');
+    Blockly.utils.dom.addClass(blockTypeWrapper, 'blockly-ws-block-select');
+    const blockTypeDropDown = this.createDropDown_(
+      ['Control', 'Logic', 'Math',
+      'Text', 'Lists', 'Dictionaries',
+      'Colors', 'Variables', 'Procedures']
+    );
+    this.addEvent_(blockTypeDropDown, 'change', this, (e) => {
+      this.searchAndHighlight(e.target.value, this.preserveSelected, 'block');
+    });
+    blockTypeWrapper.appendChild(blockTypeDropDown);
+
+    // App Inventor specific elements
+    searchContent.appendChild(searchTypeWrapper);
+    searchContent.appendChild(blockTypeWrapper);
 
     inputWrapper.appendChild(this.inputElement_);
     searchContent.appendChild(inputWrapper);
@@ -506,6 +530,22 @@ class WorkspaceSearch {
   }
 
   /**
+   * creates dropdown elements.
+   * @param {!Array<!String>} options Options to be added to the dropdown.
+   * @returns {!HTMLSelectElement} 
+   * @protected
+   */
+  createDropDown_(options) {
+    const dropDown = document.createElement('select');
+    for (const optionText of options) {
+      const optionElem = document.createElement('option');
+      optionElem.text = optionText;
+      dropDown.add(optionElem);
+    }
+    return dropDown;
+  }
+
+  /**
    * Add event listener for clicking and keydown on the given button.
    * @param {!HTMLButtonElement} btn The button to add the event listener to.
    * @param {!Function} onClickFn The function to call when the user clicks on
@@ -607,6 +647,23 @@ class WorkspaceSearch {
   }
 
   /**
+   * Changes the search filter.
+   * @param {Event} e The change event.
+   * @private
+   */
+  searchChange_(e) {
+    this.clearBlocks();
+    const searchType = e.target.value;
+    if (searchType === 'keyword') {
+      document.querySelector('.blockly-ws-search-input').style.display = 'flex';
+      document.querySelector('.blockly-ws-block-select').style.display = 'none';
+    } else if (searchType === 'block') {
+      document.querySelector('.blockly-ws-block-select').style.display = 'flex';
+      document.querySelector('.blockly-ws-search-input').style.display = 'none';
+    }
+  }
+
+  /**
    * Selects the previous block.
    */
   previous() {
@@ -689,13 +746,23 @@ class WorkspaceSearch {
    * @param {string} searchText The search text.
    * @param {boolean=} preserveCurrent Whether to preserve the current block
    *    if it is included in the new matching blocks.
+   * 
+   * ToDo: Add param for searchType.
    */
-  searchAndHighlight(searchText, preserveCurrent) {
+  searchAndHighlight(searchText, preserveCurrent, searchType='keyword') {
     const oldCurrentBlock = this.blocks_[this.currentBlockIndex_];
     this.searchText_ = searchText.trim();
     this.clearBlocks();
-    this.blocks_ = this.getMatchingBlocks_(
-        this.workspace_, this.searchText_, this.caseSensitive);
+
+    if (searchType === 'keyword') {
+      // if the search was keyword based(default)
+      this.blocks_ = this.getMatchingBlocks_(this.workspace_, this.searchText_, this.caseSensitive);
+    } else if (searchType === 'block') {
+      // if the search was blocktype based(custom)
+      // in this case searchText will contain the block type
+      this.blocks_ = this.getMatchingBlockType_(this.workspace_, this.searchText_);
+    }
+
     this.highlightSearchGroup_(this.blocks_);
     let currentIdx = 0;
     if (preserveCurrent) {
@@ -770,6 +837,21 @@ class WorkspaceSearch {
     const searchGroup = this.getSearchPool_(workspace);
     return searchGroup.filter(
         (block) => this.isBlockMatch_(block, searchText, caseSensitive));
+  }
+
+  /**
+   * Returns blocks that match the given block type.
+   * @param {!Blockly.WorkspaceSvg} workspace The workspace to search.
+   * @param {string} blockType The block type.
+   * @returns {!Array.<Blockly.BlockSvg>} The blocks that match the block type.
+   * @protected
+   */
+  getMatchingBlockType_(workspace, blockType) {
+    const searchGroup = this.getSearchPool_(workspace);
+    blockType = blockType.toLowerCase();
+    return searchGroup.filter(
+      (blockObj) => blockObj.category.toLowerCase() === blockType
+    );
   }
 
   /**
