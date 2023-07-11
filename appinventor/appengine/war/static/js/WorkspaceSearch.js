@@ -385,11 +385,13 @@ class WorkspaceSearch {
     core_.utils.dom.addClass(searchContent, 'blockly-ws-search-content');
     searchContainer.appendChild(searchContent);
 
-    // Add searchType wrapper and DropDown.
+    // SearchType Wrapper
     const searchTypeWrapper = document.createElement('div');
     Blockly.utils.dom.addClass(searchTypeWrapper, 'blockly-ws-search-select');
+
+    // SearchType DropDown
     const searchTypeDropDown = this.createDropDown_(['keyword', 'block', 'component']);
-    this.addEvent_(searchTypeDropDown, 'change', this, (e) => this.searchChange_(e));
+    this.addEvent_(searchTypeDropDown, 'change', this, (e) => this.searchChange_(e.target.value));
     searchTypeWrapper.appendChild(searchTypeDropDown);
 
     const inputWrapper = document.createElement('div');
@@ -404,9 +406,11 @@ class WorkspaceSearch {
       this.inputElement_.select();
     });
   
-    // Add blockType wrapper and DropDown.
+    // BlockType Wrapper
     const blockTypeWrapper = document.createElement('div');
     Blockly.utils.dom.addClass(blockTypeWrapper, 'blockly-ws-block-select');
+
+    // BlockType DropDown
     const blockTypeDropDown = this.createDropDown_(
       ['Control', 'Logic', 'Math',
       'Text', 'Lists', 'Dictionaries',
@@ -443,6 +447,8 @@ class WorkspaceSearch {
       this.addBtnListener_(closeBtn, () => this.close());
       searchContainer.appendChild(closeBtn);
     }
+
+    blockTypeWrapper.style.display = 'none';
 
     this.htmlDiv_.appendChild(searchContainer);
 
@@ -648,12 +654,11 @@ class WorkspaceSearch {
 
   /**
    * Changes the search filter.
-   * @param {Event} e The change event.
+   * @param {string} searchType Type to search blocks.
    * @private
    */
-  searchChange_(e) {
+  searchChange_(searchType) {
     this.clearBlocks();
-    const searchType = e.target.value;
     if (searchType === 'keyword') {
       document.querySelector('.blockly-ws-search-input').style.display = 'flex';
       document.querySelector('.blockly-ws-block-select').style.display = 'none';
