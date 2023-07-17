@@ -375,6 +375,20 @@ Blockly.ComponentDatabase.prototype.getComponentNamesByType = function(component
 };
 
 /**
+ * 
+ *
+ */
+Blockly.ComponentDatabase.prototype.getTypeToNameMap = function() {
+  var typeToNameMap = {}; 
+  for (var type of this.getComponentTypes()) {
+    typeToNameMap[type[0]] = this.getComponentNamesByType(type[0]).map(function(instance) {
+      return instance[0];
+    });
+  }
+  return typeToNameMap;
+};
+
+/**
  * Obtain type names of added components for presentation in a drop-down field.
  *
  * @returns {Array.<Array.<string>>} An array of 2-tuples containing the type of each component.

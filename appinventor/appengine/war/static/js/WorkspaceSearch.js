@@ -316,6 +316,9 @@ class WorkspaceSearch {
      * @private
      */
     this.boundEvents_ = [];
+
+    this.componentTypeDropDown = this.createDropDown_();
+    this.componentInstanceDropDown = this.createDropDown_();
   }
 
   /**
@@ -421,9 +424,26 @@ class WorkspaceSearch {
     });
     blockTypeWrapper.appendChild(blockTypeDropDown);
 
+    // Component Wrapper
+    const componentWrapper = document.createElement('div');
+    Blockly.utils.dom.addClass(componentWrapper, 'blockly-ws-component-select');
+
+    // Component Type DropDown
+    this.addEvent_(this.componentTypeDropDown, 'change', this, (e) => {
+      this.updateComponentInstanceDropDown_(e.target.value);
+    });
+    componentWrapper.appendChild(this.componentTypeDropDown);
+
+    // Component Instance DropDown
+    this.addEvent_(this.componentInstanceDropDown, 'change', this, (e) => {
+      this.searchAndHighlight(e.target.value, this.preserveSelected, 'component');
+    });
+    componentWrapper.appendChild(this.componentInstanceDropDown);
+
     // App Inventor specific elements
     searchContent.appendChild(searchTypeWrapper);
     searchContent.appendChild(blockTypeWrapper);
+    searchContent.appendChild(componentWrapper);
 
     inputWrapper.appendChild(this.inputElement_);
     searchContent.appendChild(inputWrapper);
@@ -448,7 +468,9 @@ class WorkspaceSearch {
       searchContainer.appendChild(closeBtn);
     }
 
+    //hiding block and component when init
     blockTypeWrapper.style.display = 'none';
+    componentWrapper.style.display = 'none';
 
     this.htmlDiv_.appendChild(searchContainer);
 
@@ -541,7 +563,7 @@ class WorkspaceSearch {
    * @returns {!HTMLSelectElement} 
    * @protected
    */
-  createDropDown_(options) {
+  createDropDown_(options=[]) {
     const dropDown = document.createElement('select');
     for (const optionText of options) {
       const optionElem = document.createElement('option');
@@ -549,6 +571,46 @@ class WorkspaceSearch {
       dropDown.add(optionElem);
     }
     return dropDown;
+  }
+
+  /**
+   * 
+   * @private
+   */
+  updateComponentTypeDropDown_() {
+    const compDB = this.workspace_.getComponentDatabase();
+    const componentMap = compDB.getTypeToNameMap();
+
+    // clear the old component type options.
+    this.componentTypeDropDown.innerHTML = '';
+    // Set the display of the component instance DD to none.
+    this.componentInstanceDropDown.style.display = 'none';
+
+    for (const optionText of Object.keys(componentMap)) {
+      const optionElem = document.createElement('option');
+      optionElem.text = optionText;
+      this.componentTypeDropDown.add(optionElem);
+    }
+  }
+
+  /**
+   * updates the componenst instance dropdown.
+   * @param {string} componentType the component type selected.
+   * @private
+   */
+  updateComponentInstanceDropDown_(componentType) {
+    const compDB = this.workspace_.getComponentDatabase();
+    const componentMap = compDB.getTypeToNameMap();
+    // clear the old component type options.
+    this.componentInstanceDropDown.innerHTML = '';
+    // Set the display of the component instance DD to flex.
+    this.componentInstanceDropDown.style.display = 'flex';
+
+    for (const optionText of componentMap[componentType]) {
+      const optionElem = document.createElement('option');
+      optionElem.text = optionText;
+      this.componentInstanceDropDown.add(optionElem);
+    }
   }
 
   /**
@@ -662,9 +724,16 @@ class WorkspaceSearch {
     if (searchType === 'keyword') {
       document.querySelector('.blockly-ws-search-input').style.display = 'flex';
       document.querySelector('.blockly-ws-block-select').style.display = 'none';
+      document.querySelector('.blockly-ws-component-select').style.display = 'none';
     } else if (searchType === 'block') {
-      document.querySelector('.blockly-ws-block-select').style.display = 'flex';
       document.querySelector('.blockly-ws-search-input').style.display = 'none';
+      document.querySelector('.blockly-ws-block-select').style.display = 'flex';
+      document.querySelector('.blockly-ws-component-select').style.display = 'none';
+    } else if (searchType === 'component') {
+      this.updateComponentTypeDropDown_();
+      document.querySelector('.blockly-ws-search-input').style.display = 'none';
+      document.querySelector('.blockly-ws-block-select').style.display = 'none';
+      document.querySelector('.blockly-ws-component-select').style.display = 'flex';
     }
   }
 
@@ -766,7 +835,9 @@ class WorkspaceSearch {
       // if the search was blocktype based(custom)
       // in this case searchText will contain the block type
       this.blocks_ = this.getMatchingBlockType_(this.workspace_, this.searchText_);
-    }
+    } else if (searchType === 'component') {
+      this.blocks_ = this.getMatchingBlocks_(this.workspace_, this.searchText_, this.caseSensitive);
+    } 
 
     this.highlightSearchGroup_(this.blocks_);
     let currentIdx = 0;
