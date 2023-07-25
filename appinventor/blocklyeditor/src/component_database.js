@@ -384,6 +384,8 @@ Blockly.ComponentDatabase.prototype.getTypeToNameMap = function() {
     typeToNameMap[type[0]] = this.getComponentNamesByType(type[0]).map(function(instance) {
       return instance[0];
     });
+    typeToNameMap[type[0]].push(`any ${type[0]}`)
+    typeToNameMap[type[0]].push(`all ${type[0]}`)
   }
   return typeToNameMap;
 };

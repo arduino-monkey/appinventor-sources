@@ -836,7 +836,7 @@ class WorkspaceSearch {
       // in this case searchText will contain the block type
       this.blocks_ = this.getMatchingBlockType_(this.workspace_, this.searchText_);
     } else if (searchType === 'component') {
-      this.blocks_ = this.getMatchingBlocks_(this.workspace_, this.searchText_, this.caseSensitive);
+      this.blocks_ = this.getMatchingComponent_(this.workspace_, this.searchText_, this.caseSensitive);
     } 
 
     this.highlightSearchGroup_(this.blocks_);
@@ -928,6 +928,26 @@ class WorkspaceSearch {
     return searchGroup.filter(
       (blockObj) => blockObj.category.toLowerCase() === blockType
     );
+  }
+
+  /**
+   * Returns block or blocks matching a component type.
+   * @param {!Blockly.WorkspaceSvg} workspace The workspace to search.
+   * @param {string} componentSearchKey The component to search.
+   * @returns {!Array.<Blockly.BlockSvg>} The blocks that match the block type.
+   */
+  getMatchingComponent_(workspace, componentSearchKey, caseSensitive){
+    const searchGroup = this.getSearchPool_(workspace);
+    componentSearchKey = componentSearchKey.toLocaleLowerCase();
+    if (componentSearchKey.indexOf('all') > -1) {
+      // get the component type.
+      const componentType = componentSearchKey.split(" ")[1];
+      // get all the blocks which match the componentType.
+      return searchGroup.filter(
+        (block) => this.isBlockMatch_(block, componentType, caseSensitive));
+    }
+    return searchGroup.filter(
+      (block) => this.isBlockMatch_(block, componentSearchKey, caseSensitive));
   }
 
   /**
