@@ -579,14 +579,14 @@ class WorkspaceSearch {
    */
   updateComponentTypeDropDown_() {
     const compDB = this.workspace_.getComponentDatabase();
-    const componentMap = compDB.getTypeToNameMap();
+    const componentMap = compDB.getTypeToInstanceMap();
 
     // clear the old component type options.
     this.componentTypeDropDown.innerHTML = '';
     // Set the display of the component instance DD to none.
     this.componentInstanceDropDown.style.display = 'none';
 
-    for (const optionText of Object.keys(componentMap)) {
+    for (const optionText of componentMap.keys()) {
       const optionElem = document.createElement('option');
       optionElem.text = optionText;
       this.componentTypeDropDown.add(optionElem);
@@ -600,15 +600,22 @@ class WorkspaceSearch {
    */
   updateComponentInstanceDropDown_(componentType) {
     const compDB = this.workspace_.getComponentDatabase();
-    const componentMap = compDB.getTypeToNameMap();
+    const componentMap = compDB.getTypeToInstanceMap();
+    const componentInfo = componentMap.get(componentType);
     // clear the old component type options.
     this.componentInstanceDropDown.innerHTML = '';
     // Set the display of the component instance DD to flex.
     this.componentInstanceDropDown.style.display = 'flex';
 
-    for (const optionText of componentMap[componentType]) {
+    for (const optionText of componentInfo.get('instances')) {
       const optionElem = document.createElement('option');
       optionElem.text = optionText;
+      this.componentInstanceDropDown.add(optionElem);
+    }
+
+    for (const optionText of ['any', 'all']) {
+      const optionElem = document.createElement('option');
+      optionElem.text = `${optionText} ${componentType}`;
       this.componentInstanceDropDown.add(optionElem);
     }
   }
@@ -938,16 +945,23 @@ class WorkspaceSearch {
    */
   getMatchingComponent_(workspace, componentSearchKey, caseSensitive){
     const searchGroup = this.getSearchPool_(workspace);
-    componentSearchKey = componentSearchKey.toLocaleLowerCase();
     if (componentSearchKey.indexOf('all') > -1) {
       // get the component type.
       const componentType = componentSearchKey.split(" ")[1];
+
+      // get the english name for the component type.
+      const compDB = this.workspace_.getComponentDatabase();
+      const componentMap = compDB.getTypeToInstanceMap();
+      const componentInfo = componentMap.get(componentType);
+      const engComponentType = componentInfo.get('englishName');
       // get all the blocks which match the componentType.
       return searchGroup.filter(
-        (block) => this.isBlockMatch_(block, componentType, caseSensitive));
+        (blockObj) => blockObj.typeName === engComponentType
+      );
     }
+    componentSearchKey = componentSearchKey.toLowerCase();
     return searchGroup.filter(
-      (block) => this.isBlockMatch_(block, componentSearchKey, caseSensitive));
+      (blockObj) => this.isBlockMatch_(blockObj, componentSearchKey, caseSensitive));
   }
 
   /**
