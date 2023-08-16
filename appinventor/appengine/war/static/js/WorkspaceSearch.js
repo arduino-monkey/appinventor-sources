@@ -728,21 +728,30 @@ class WorkspaceSearch {
    */
   searchChange_(searchType) {
     this.clearBlocks();
-    if (searchType === 'keyword') {
-      document.querySelector('.blockly-ws-search-input').style.display = 'flex';
-      document.querySelector('.blockly-ws-block-select').style.display = 'none';
-      document.querySelector('.blockly-ws-component-select').style.display = 'none';
-    } else if (searchType === 'block') {
-      document.querySelector('.blockly-ws-search-input').style.display = 'none';
-      document.querySelector('.blockly-ws-block-select').style.display = 'flex';
-      document.querySelector('.blockly-ws-component-select').style.display = 'none';
-    } else if (searchType === 'component') {
-      this.updateComponentTypeDropDown_();
-      document.querySelector('.blockly-ws-search-input').style.display = 'none';
-      document.querySelector('.blockly-ws-block-select').style.display = 'none';
-      document.querySelector('.blockly-ws-component-select').style.display = 'flex';
+
+    // Define a mapping from searchType to the class name of the element that should be displayed.
+    const typeToClassMap = {
+        keyword: '.blockly-ws-search-input',
+        block: '.blockly-ws-block-select',
+        component: '.blockly-ws-component-select'
+    };
+
+    // Hide all elements
+    for (const elementClass of Object.values(typeToClassMap)) {
+        document.querySelector(elementClass).style.display = 'none';
+    }
+
+    // Display the appropriate element for the given searchType.
+    const elementToShow = typeToClassMap[searchType];
+    if (elementToShow) {
+        document.querySelector(elementToShow).style.display = 'flex';
+    }
+
+    if (searchType === 'component') {
+        this.updateComponentTypeDropDown_();
     }
   }
+
 
   /**
    * Selects the previous block.
