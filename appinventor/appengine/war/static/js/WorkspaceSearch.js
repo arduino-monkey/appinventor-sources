@@ -319,6 +319,7 @@ class WorkspaceSearch {
 
     this.componentTypeDropDown = this.createDropDown_();
     this.componentInstanceDropDown = this.createDropDown_();
+    this.blockTypeDropDown = this.createDropDown_();
   }
 
   /**
@@ -394,7 +395,10 @@ class WorkspaceSearch {
 
     // SearchType DropDown
     const searchTypeDropDown = this.createDropDown_(['keyword', 'block', 'component']);
-    this.addEvent_(searchTypeDropDown, 'change', this, (e) => this.searchChange_(e.target.value));
+    this.addEvent_(searchTypeDropDown, 'change', this, (e) => {
+      this.searchChange_(e.target.value);
+      this.searchFind_(e.target.value);
+    });
     searchTypeWrapper.appendChild(searchTypeDropDown);
 
     const inputWrapper = document.createElement('div');
@@ -414,15 +418,10 @@ class WorkspaceSearch {
     Blockly.utils.dom.addClass(blockTypeWrapper, 'blockly-ws-block-select');
 
     // BlockType DropDown
-    const blockTypeDropDown = this.createDropDown_(
-      ['Control', 'Logic', 'Math',
-      'Text', 'Lists', 'Dictionaries',
-      'Colors', 'Variables', 'Procedures']
-    );
-    this.addEvent_(blockTypeDropDown, 'change', this, (e) => {
+    this.addEvent_(this.blockTypeDropDown, 'change', this, (e) => {
       this.searchAndHighlight(e.target.value, this.preserveSelected, 'block');
     });
-    blockTypeWrapper.appendChild(blockTypeDropDown);
+    blockTypeWrapper.appendChild(this.blockTypeDropDown);
 
     // Component Wrapper
     const componentWrapper = document.createElement('div');
@@ -575,6 +574,22 @@ class WorkspaceSearch {
 
   /**
    * 
+   */
+  updateBlockTypeDropDown_() {
+    const blocksToolkit = this.getBlocksToolkit();
+
+    // clear the old block type options.
+    this.blockTypeDropDown.innerHTML = '';
+
+    for (const optionText of Object.keys(blocksToolkit)) {
+      const optionElem = document.createElement('option');
+      optionElem.text = optionText;
+      this.blockTypeDropDown.add(optionElem);
+    }
+  }
+
+  /**
+   * 
    * @private
    */
   updateComponentTypeDropDown_() {
@@ -583,14 +598,15 @@ class WorkspaceSearch {
 
     // clear the old component type options.
     this.componentTypeDropDown.innerHTML = '';
-    // Set the display of the component instance DD to none.
-    this.componentInstanceDropDown.style.display = 'none';
+    // // Set the display of the component instance DD to none.
+    // this.componentInstanceDropDown.style.display = 'none';
 
     for (const optionText of componentMap.keys()) {
       const optionElem = document.createElement('option');
       optionElem.text = optionText;
       this.componentTypeDropDown.add(optionElem);
     }
+    this.updateComponentInstanceDropDown_(componentMap.keys().next().value);
   }
 
   /**
@@ -605,7 +621,7 @@ class WorkspaceSearch {
     // clear the old component type options.
     this.componentInstanceDropDown.innerHTML = '';
     // Set the display of the component instance DD to flex.
-    this.componentInstanceDropDown.style.display = 'flex';
+    // this.componentInstanceDropDown.style.display = 'flex';
 
     for (const optionText of componentInfo.get('instances')) {
       const optionElem = document.createElement('option');
@@ -746,9 +762,18 @@ class WorkspaceSearch {
     if (elementToShow) {
         document.querySelector(elementToShow).style.display = 'flex';
     }
+  }
 
-    if (searchType === 'component') {
-        this.updateComponentTypeDropDown_();
+  /**
+   * 
+   */
+  searchFind_(searchType) {
+    if (searchType === 'block') {
+      this.updateBlockTypeDropDown_();
+      this.searchAndHighlight(this.blockTypeDropDown.value, this.preserveSelected, 'block');
+    } else if (searchType === 'component') {
+      this.updateComponentTypeDropDown_();
+      this.searchAndHighlight(this.componentInstanceDropDown.value, this.preserveSelected, 'component');
     }
   }
 
@@ -828,6 +853,25 @@ class WorkspaceSearch {
    */
   setVisible_(show) {
     this.htmlDiv_.style.display = show ? 'flex' : 'none';
+  }
+
+  /**
+   * 
+   */
+  getBlocksToolkit() {
+    const tree = Blockly.Drawer.buildTree_();
+    const blocksToolkit = {};
+    for (let key in tree) {
+      const i18nBlockTypeName = key.replace('cat_', '');
+      let blockType = tree[key][0].split('_')[0];
+
+      if (blockType === 'controls'){
+        blockType = 'control';
+      }
+
+      blocksToolkit[i18nBlockTypeName] = blockType;
+    }
+    return blocksToolkit;
   }
 
   /**
@@ -940,7 +984,8 @@ class WorkspaceSearch {
    */
   getMatchingBlockType_(workspace, blockType) {
     const searchGroup = this.getSearchPool_(workspace);
-    blockType = blockType.toLowerCase();
+    const blocksToolkit = this.getBlocksToolkit();
+    blockType = blocksToolkit[blockType]; 
     return searchGroup.filter(
       (blockObj) => blockObj.category.toLowerCase() === blockType
     );
