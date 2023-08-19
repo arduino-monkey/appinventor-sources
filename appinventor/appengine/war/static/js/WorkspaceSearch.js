@@ -867,6 +867,12 @@ class WorkspaceSearch {
 
       if (blockType === 'controls'){
         blockType = 'control';
+      } else if (blockType === 'color') {
+        blockType = 'colors';
+      } else if (blockType === 'lexical') {
+        blockType = 'variables';
+      } else if (blockType === 'component') {
+        continue;
       }
 
       blocksToolkit[i18nBlockTypeName] = blockType;
